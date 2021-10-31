@@ -27,6 +27,6 @@ for comment in comments_data:
     user_name = comment['more_info_users'][0]['screen_name']
     user_gender = comment['user']['gender']
     user_des = comment['user']['description']
-    line = text+', '+user_name+', '+user_gender+', '+user_des+', '
+    line = 'User_name: '+user_name+', '+'User_gender: '+user_gender+', '+'User_des: '+user_des+', '
     print(line)
 print('Finish!')
