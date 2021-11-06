@@ -2,6 +2,10 @@
 import pprint
 import requests as req
 from lxml import etree
+from lxml import html
+from html import unescape
+from html.parser import HTMLParser
+from lxml.html import tostring
 
 # Define url and get all the data
 # weiboid = input('weiboid:')
@@ -16,31 +20,74 @@ headers = {
     'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36'
 }
 user_url = 'http://weibo.cn/{uid}/info'
-
 url = 'http://m.weibo.cn/comments/hotflow?id={weiboid}&mid={weiboid}&max_id_type=0'.format(weiboid=weiboid)
 response = req.get(url, headers=headers, timeout=10)
 data = response.json()
 
+
 # Filter information that we want
 comments = data.get('data')
+max_id = comments['max_id']
+max_type = comments['max_id_type']
 comments_data = comments['data']
 rows = []
 
-comment = comments_data[0]
+print('正在爬第1页')
+for comment in comments_data:
+    time = comment['created_at']
+    text = comment['text']
+    user_id = comment['user']['id']
+    user_name = comment['user'][0]['screen_name']
+    user_gender = comment['user']['gender']
+    user_des = comment['user']['description']
+   
+    row = [user_id, user_name, user_gender, user_des, text, time]
+    rows.append(row)
 
-time = comment['created_at']
-text = comment['text']
-user_id = comment['user']['id']
-user_name = comment['user']['screen_name']
-user_gender = comment['user']['gender']
-user_des = comment['user']['description']
-# Other information
-url2 = user_url.format(uid=user_id)
-user_info = req.get(url2, headers=headers)
-user_info.encoding = 'utf-8'
-root = etree.HTML(user_info.content)
-user_location = root.xpath("/html/body/div[6]/text()[4]")
-user_birth = root.xpath("/html/body/div[6]/text()[5]")
-user_other = root.xpath("/html/body/div[6]/text()[6]")
+i=1
+# page = int(input('爬几页:'))
+page = 2
+for i in range(1, page):
+    i += 1
+    print('正在爬第%i页'%i)
+    url = base_url.format(max_id=max_id, max_type=max_type, weiboid=weiboid)
+    response = req.get(url, headers=headers, timeout=10)
+    data = response.json()
 
-print(user_info)
+    # Filter information that we want
+    comments = data.get('data')
+    max_id = comments['max_id']
+    max_type = comments['max_id_type']
+    comments_data = comments['data']
+    rows = []
+
+    for comment in comments_data:
+        time = comment['created_at']
+        text = comment['text']
+        user_id = comment['user']['id']
+        user_name = comment['user'][0]['screen_name']
+        user_gender = comment['user']['gender']
+        user_des = comment['user']['description']
+   
+        row = [user_id, user_name, user_gender, user_des, text, time]
+        rows.append(row)
+
+## 设置excel表地址
+dest_filename = '/Users/siyuyang/Desktop/TNT-1/data.xlsx'
+## 将数据写入Excel
+from openpyxl import Workbook
+wb = Workbook()
+# 选中活动表
+ws1 = wb.active
+ 
+# 设置表头
+title = ['用户id', '用户名', '性别', '用户描述', '评论', '评论时间']
+for row in range(len(title)):
+    c = row + 1
+    ws1.cell(row=1, column=c, value=title[row])
+ 
+# 数据录入
+for listIndex in range(len(rows)):
+    ws1.append(rows[listIndex])
+ 
+wb.save(filename=dest_filename)
